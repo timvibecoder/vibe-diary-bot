@@ -67,62 +67,66 @@ logging.basicConfig(
 
 # Инициализация базы данных
 def init_db():
-    conn = sqlite3.connect('vibe_tracker.db')
-    c = conn.cursor()
-    
-    # Удаляем старую таблицу user_vibes если она существует
-    c.execute('DROP TABLE IF EXISTS user_vibes')
-    
-    # Создание таблицы для хранения вайба пользователей
-    c.execute('''
-        CREATE TABLE user_vibes
-        (user_id INTEGER,
-         chat_id INTEGER,
-         username TEXT,
-         vibe_score INTEGER DEFAULT 0,
-         last_update TIMESTAMP,
-         last_daily_bonus TIMESTAMP,
-         daily_streak INTEGER DEFAULT 0,
-         PRIMARY KEY (user_id, chat_id))
-    ''')
-    
-    # Создание таблицы для хранения истории изменений
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS vibe_history
-        (id INTEGER PRIMARY KEY AUTOINCREMENT,
-         user_id INTEGER,
-         chat_id INTEGER,
-         change_amount INTEGER,
-         note TEXT,
-         timestamp TIMESTAMP,
-         FOREIGN KEY (user_id, chat_id) REFERENCES user_vibes(user_id, chat_id))
-    ''')
-    
-    # Новые таблицы
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS achievements
-        (user_id INTEGER,
-         chat_id INTEGER,
-         achievement_id TEXT,
-         achieved_at TIMESTAMP,
-         PRIMARY KEY (user_id, chat_id, achievement_id),
-         FOREIGN KEY (user_id, chat_id) REFERENCES user_vibes(user_id, chat_id))
-    ''')
-    
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS vibe_transfers
-        (id INTEGER PRIMARY KEY AUTOINCREMENT,
-         from_user_id INTEGER,
-         to_user_id INTEGER,
-         chat_id INTEGER,
-         amount INTEGER,
-         timestamp TIMESTAMP,
-         FOREIGN KEY (from_user_id, chat_id) REFERENCES user_vibes(user_id, chat_id),
-         FOREIGN KEY (to_user_id, chat_id) REFERENCES user_vibes(user_id, chat_id))
-    ''')
-    
-    conn.commit()
-    conn.close()
+    try:
+        conn = sqlite3.connect('vibe_tracker.db')
+        c = conn.cursor()
+        
+        # Создание таблицы для хранения вайба пользователей
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS user_vibes
+            (user_id INTEGER,
+             chat_id INTEGER,
+             username TEXT,
+             vibe_score INTEGER DEFAULT 0,
+             last_update TIMESTAMP,
+             last_daily_bonus TIMESTAMP,
+             daily_streak INTEGER DEFAULT 0,
+             PRIMARY KEY (user_id, chat_id))
+        ''')
+        
+        # Создание таблицы для хранения истории изменений
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS vibe_history
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+             user_id INTEGER,
+             chat_id INTEGER,
+             change_amount INTEGER,
+             note TEXT,
+             timestamp TIMESTAMP,
+             FOREIGN KEY (user_id, chat_id) REFERENCES user_vibes(user_id, chat_id))
+        ''')
+        
+        # Новые таблицы
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS achievements
+            (user_id INTEGER,
+             chat_id INTEGER,
+             achievement_id TEXT,
+             achieved_at TIMESTAMP,
+             PRIMARY KEY (user_id, chat_id, achievement_id),
+             FOREIGN KEY (user_id, chat_id) REFERENCES user_vibes(user_id, chat_id))
+        ''')
+        
+        c.execute('''
+            CREATE TABLE IF NOT EXISTS vibe_transfers
+            (id INTEGER PRIMARY KEY AUTOINCREMENT,
+             from_user_id INTEGER,
+             to_user_id INTEGER,
+             chat_id INTEGER,
+             amount INTEGER,
+             timestamp TIMESTAMP,
+             FOREIGN KEY (from_user_id, chat_id) REFERENCES user_vibes(user_id, chat_id),
+             FOREIGN KEY (to_user_id, chat_id) REFERENCES user_vibes(user_id, chat_id))
+        ''')
+        
+        conn.commit()
+        logging.info("Database initialized successfully")
+    except Exception as e:
+        logging.error(f"Error initializing database: {e}")
+        raise
+    finally:
+        if 'conn' in locals():
+            conn.close()
 
 def get_level_info(vibe_score):
     current_level = 0
